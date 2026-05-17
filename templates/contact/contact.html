@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Contact Us – LuxeMart{% endblock %}
+{% block content %}
+
+<div class="page-hero">
+  <div class="container">
+    <div class="breadcrumb-luxe mb-2">
+      <a href="{% url 'store:home' %}">Home</a><span class="breadcrumb-sep">/</span><span>Contact</span>
+    </div>
+    <h1>Get in Touch</h1>
+    <p style="color:var(--text-muted);margin-top:0.4rem;">Our support team responds within 24 hours.</p>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:3rem;align-items:start;">
+
+      <!-- Info Column -->
+      <div>
+        <h2 class="display-font" style="font-size:2rem;margin-bottom:0.75rem;font-weight:400;">Let's Talk</h2>
+        <p style="color:var(--text-secondary);line-height:1.8;margin-bottom:2rem;">Whether you have a question about an order, need product advice, or want to share feedback — we're always here.</p>
+
+        <div style="display:flex;flex-direction:column;gap:1rem;margin-bottom:2rem;">
+          <div style="display:flex;align-items:flex-start;gap:1rem;padding:1.25rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);">
+            <div style="width:44px;height:44px;background:rgba(184,147,90,0.1);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="bi bi-geo-alt-fill" style="color:var(--gold);font-size:1.1rem;"></i>
+            </div>
+            <div>
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:0.2rem;">Address</div>
+              <div style="font-size:0.9rem;font-weight:500;">123 Luxury Avenue, New York, NY 10001</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:1rem;padding:1.25rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);">
+            <div style="width:44px;height:44px;background:rgba(184,147,90,0.1);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="bi bi-telephone-fill" style="color:var(--gold);font-size:1.1rem;"></i>
+            </div>
+            <div>
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:0.2rem;">Phone</div>
+              <div style="font-size:0.9rem;font-weight:500;">+1 (555) 123-4567</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:1rem;padding:1.25rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);">
+            <div style="width:44px;height:44px;background:rgba(184,147,90,0.1);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="bi bi-envelope-fill" style="color:var(--gold);font-size:1.1rem;"></i>
+            </div>
+            <div>
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:0.2rem;">Email</div>
+              <div style="font-size:0.9rem;font-weight:500;">hello@luxemart.com</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:1rem;padding:1.25rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);">
+            <div style="width:44px;height:44px;background:rgba(184,147,90,0.1);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="bi bi-clock-fill" style="color:var(--gold);font-size:1.1rem;"></i>
+            </div>
+            <div>
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:0.2rem;">Working Hours</div>
+              <div style="font-size:0.9rem;font-weight:500;">Mon – Fri: 9:00 AM – 6:00 PM EST</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:0.75rem;">Follow Us</p>
+          <div style="display:flex;gap:0.75rem;">
+            <a href="#" class="social-link" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+            <a href="#" class="social-link" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+            <a href="#" class="social-link" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
+            <a href="#" class="social-link" aria-label="Pinterest"><i class="bi bi-pinterest"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Column -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:2.5rem;box-shadow:var(--shadow-md);">
+        <h3 class="display-font" style="font-size:1.8rem;margin-bottom:0.5rem;font-weight:400;">Send a Message</h3>
+        <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:2rem;">Fill out the form and we'll get back to you shortly.</p>
+
+        <form method="post" id="contactForm" novalidate>
+          {% csrf_token %}
+          <!-- Honeypot anti-spam -->
+          <input type="text" name="website" style="display:none;" tabindex="-1" autocomplete="off">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" name="name" class="form-control" required placeholder="John Doe"
+                     value="{{ user.get_full_name|default:'' }}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address *</label>
+              <input type="email" name="email" class="form-control" required placeholder="john@example.com"
+                     value="{{ user.email|default:'' }}">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Subject *</label>
+            <select name="subject" class="form-control" required>
+              <option value="">Select a subject…</option>
+              <option>Order Enquiry</option>
+              <option>Product Question</option>
+              <option>Return &amp; Refund</option>
+              <option>Shipping Issue</option>
+              <option>Technical Support</option>
+              <option>Partnership</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Message *</label>
+            <textarea name="message" class="form-control" rows="6" required
+                      placeholder="Tell us how we can help…" style="resize:vertical;"></textarea>
+          </div>
+
+          <button type="submit" class="btn-luxe btn-primary w-100" style="font-size:0.95rem;padding:1rem;" id="submitContactBtn">
+            <i class="bi bi-send-fill"></i> Send Message
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('contactForm')?.addEventListener('submit', function() {
+  const btn = document.getElementById('submitContactBtn');
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending…';
+  btn.disabled = true;
+});
+</script>
+{% endblock %}

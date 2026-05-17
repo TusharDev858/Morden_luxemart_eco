@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}My Dashboard – LuxeMart{% endblock %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <h1>My Dashboard</h1>
+    <p style="color:var(--text-muted);margin-top:0.5rem;">Welcome back, {{ user.get_full_name|default:user.email }}</p>
+  </div>
+</div>
+<section class="section-sm">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:240px 1fr;gap:2rem;align-items:start;">
+      <!-- Sidebar -->
+      <aside>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="padding:1.5rem;text-align:center;border-bottom:1px solid var(--border);background:var(--bg-secondary);">
+            {% if user.avatar %}
+            <img src="{{ user.avatar.url }}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;margin-bottom:0.75rem;border:3px solid var(--gold);">
+            {% else %}
+            <div style="width:72px;height:72px;border-radius:50%;background:var(--gold-gradient);display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;color:white;margin:0 auto 0.75rem;">
+              {{ user.first_name|first|default:user.email|first|upper }}
+            </div>
+            {% endif %}
+            <div style="font-weight:700;font-size:0.95rem;">{{ user.get_full_name|default:user.username }}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">{{ user.email }}</div>
+          </div>
+          <nav style="padding:0.5rem;">
+            {% url 'users:dashboard' as dash_url %}
+            {% url 'users:profile' as prof_url %}
+            {% url 'orders:order_list' as ord_url %}
+            {% url 'wishlist:list' as wish_url %}
+            {% for label, icon, url in dashboard_nav %}
+            {% endfor %}
+            <a href="{% url 'users:dashboard' %}" style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;border-radius:var(--radius-md);font-size:0.875rem;color:var(--text-secondary);text-decoration:none;transition:all 0.2s;{% if request.path == dash_url %}background:var(--bg-secondary);color:var(--text-primary);font-weight:600;{% endif %}" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='{% if request.path == dash_url %}var(--bg-secondary){% else %}transparent{% endif %}'">
+              <i class="bi bi-speedometer2" style="color:var(--gold);"></i> Dashboard
+            </a>
+            <a href="{% url 'users:profile' %}" style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;border-radius:var(--radius-md);font-size:0.875rem;color:var(--text-secondary);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+              <i class="bi bi-person" style="color:var(--gold);"></i> Profile Settings
+            </a>
+            <a href="{% url 'orders:order_list' %}" style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;border-radius:var(--radius-md);font-size:0.875rem;color:var(--text-secondary);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+              <i class="bi bi-bag-check" style="color:var(--gold);"></i> My Orders
+            </a>
+            <a href="{% url 'wishlist:list' %}" style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;border-radius:var(--radius-md);font-size:0.875rem;color:var(--text-secondary);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+              <i class="bi bi-heart" style="color:var(--gold);"></i> Wishlist
+            </a>
+            <a href="{% url 'orders:tracking' %}" style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;border-radius:var(--radius-md);font-size:0.875rem;color:var(--text-secondary);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+              <i class="bi bi-geo-alt" style="color:var(--gold);"></i> Track Order
+            </a>
+            <div style="border-top:1px solid var(--border);margin:0.5rem 0;"></div>
+            <a href="{% url 'users:logout' %}" style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;border-radius:var(--radius-md);font-size:0.875rem;color:#ef4444;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
+              <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <div>
+        <!-- Stats Cards -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;">
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+              <span style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);">Total Orders</span>
+              <div style="width:36px;height:36px;background:rgba(184,147,90,0.1);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-bag-check" style="color:var(--gold);"></i>
+              </div>
+            </div>
+            <div style="font-size:2rem;font-weight:700;font-family:var(--font-display);">{{ total_orders }}</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+              <span style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);">Wishlist Items</span>
+              <div style="width:36px;height:36px;background:rgba(239,68,68,0.1);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-heart-fill" style="color:#ef4444;"></i>
+              </div>
+            </div>
+            <div style="font-size:2rem;font-weight:700;font-family:var(--font-display);">{{ wishlist_count }}</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+              <span style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);">Total Spent</span>
+              <div style="width:36px;height:36px;background:rgba(16,185,129,0.1);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-currency-dollar" style="color:#10b981;"></i>
+              </div>
+            </div>
+            <div style="font-size:2rem;font-weight:700;font-family:var(--font-display);">${{ total_spent|floatformat:2 }}</div>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <h5 style="margin:0;font-size:1rem;font-weight:700;">Recent Orders</h5>
+            <a href="{% url 'orders:order_list' %}" style="font-size:0.8rem;color:var(--gold);">View All</a>
+          </div>
+          {% if orders %}
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:var(--bg-secondary);">
+                  <th style="padding:0.75rem 1.5rem;text-align:left;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);">Order</th>
+                  <th style="padding:0.75rem 1rem;text-align:left;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);">Date</th>
+                  <th style="padding:0.75rem 1rem;text-align:left;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);">Total</th>
+                  <th style="padding:0.75rem 1rem;text-align:left;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);">Status</th>
+                  <th style="padding:0.75rem 1rem;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for order in orders %}
+                <tr style="border-top:1px solid var(--border);">
+                  <td style="padding:1rem 1.5rem;font-size:0.875rem;font-weight:600;">#{{ order.order_number }}</td>
+                  <td style="padding:1rem;font-size:0.875rem;color:var(--text-muted);">{{ order.created_at|date:"M j, Y" }}</td>
+                  <td style="padding:1rem;font-size:0.875rem;font-weight:600;">${{ order.total_price }}</td>
+                  <td style="padding:1rem;">
+                    <span style="padding:0.25rem 0.75rem;border-radius:var(--radius-full);font-size:0.75rem;font-weight:600;
+                      {% if order.status == 'delivered' %}background:#d1fae5;color:#065f46;
+                      {% elif order.status == 'shipped' or order.status == 'out_for_delivery' %}background:#dbeafe;color:#1d4ed8;
+                      {% elif order.status == 'cancelled' %}background:#fee2e2;color:#991b1b;
+                      {% else %}background:#fef3c7;color:#92400e;{% endif %}">
+                      {{ order.get_status_display }}
+                    </span>
+                  </td>
+                  <td style="padding:1rem;">
+                    <a href="{% url 'orders:order_detail' order.pk %}" style="font-size:0.8rem;color:var(--gold);">View</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div style="text-align:center;padding:3rem;color:var(--text-muted);">
+            <i class="bi bi-bag" style="font-size:3rem;opacity:0.3;display:block;margin-bottom:1rem;"></i>
+            <p>No orders yet.</p>
+            <a href="{% url 'store:product_list' %}" class="btn-luxe btn-primary btn-sm mt-2">Start Shopping</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

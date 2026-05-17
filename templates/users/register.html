@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Create Account – LuxeMart{% endblock %}
+{% block content %}
+<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:3rem 1rem;background:var(--bg-secondary);">
+  <div style="width:100%;max-width:500px;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:2.5rem;box-shadow:var(--shadow-lg);">
+      <div style="text-align:center;margin-bottom:2rem;">
+        <a href="{% url 'store:home' %}" class="logo" style="justify-content:center;margin-bottom:1.5rem;display:inline-flex;">
+          <div class="logo-icon"><i class="bi bi-gem"></i></div>
+          Luxe<span>Mart</span>
+        </a>
+        <h1 class="display-font" style="font-size:2rem;margin-bottom:0.5rem;">Create Account</h1>
+        <p style="color:var(--text-muted);font-size:0.9rem;">Join thousands of happy shoppers</p>
+      </div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<p style="color:#ef4444;font-size:0.78rem;margin-top:0.3rem;">{{ form.first_name.errors.0 }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}<p style="color:#ef4444;font-size:0.78rem;margin-top:0.3rem;">{{ form.last_name.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          {{ form.username }}
+          {% if form.username.errors %}<p style="color:#ef4444;font-size:0.78rem;margin-top:0.3rem;">{{ form.username.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          {{ form.email }}
+          {% if form.email.errors %}<p style="color:#ef4444;font-size:0.78rem;margin-top:0.3rem;">{{ form.email.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          {{ form.password1 }}
+          {% if form.password1.errors %}<p style="color:#ef4444;font-size:0.78rem;margin-top:0.3rem;">{{ form.password1.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}<p style="color:#ef4444;font-size:0.78rem;margin-top:0.3rem;">{{ form.password2.errors.0 }}</p>{% endif %}
+        </div>
+        {% if form.non_field_errors %}
+        <p style="color:#ef4444;font-size:0.85rem;margin-bottom:1rem;padding:0.75rem;background:#fef2f2;border-radius:var(--radius-md);">{{ form.non_field_errors.0 }}</p>
+        {% endif %}
+        <button type="submit" class="btn-luxe btn-primary w-100" style="font-size:0.95rem;padding:1rem;">
+          Create Account <i class="bi bi-arrow-right"></i>
+        </button>
+      </form>
+      <div style="text-align:center;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+        <p style="font-size:0.875rem;color:var(--text-muted);">
+          Already have an account?
+          <a href="{% url 'users:login' %}" style="color:var(--gold);font-weight:600;">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

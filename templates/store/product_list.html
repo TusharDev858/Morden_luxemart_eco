@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if category %}{{ category.name }} – {% endif %}Shop – LuxeMart{% endblock %}
+
+{% block content %}
+<!-- Page Hero -->
+<div class="page-hero">
+  <div class="container">
+    <div class="breadcrumb-luxe mb-2">
+      <a href="{% url 'store:home' %}">Home</a>
+      <span class="breadcrumb-sep">/</span>
+      {% if category %}
+        <a href="{% url 'store:product_list' %}">Shop</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>{{ category.name }}</span>
+      {% else %}
+        <span>All Products</span>
+      {% endif %}
+    </div>
+    <h1>{% if category %}{{ category.name }}{% else %}All Products{% endif %}</h1>
+    <p style="color:var(--text-muted);margin-top:0.5rem;">
+      {{ paginator.count }} product{{ paginator.count|pluralize }} found
+      {% if search_query %} for "<strong>{{ search_query }}</strong>"{% endif %}
+    </p>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:2rem;align-items:start;">
+
+      <!-- ===== SIDEBAR FILTERS ===== -->
+      <aside style="position:sticky;top:calc(var(--navbar-height) + 1rem);">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="padding:1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <h6 style="margin:0;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">Filters</h6>
+            <a href="{% url 'store:product_list' %}" style="font-size:0.75rem;color:var(--gold);">Clear All</a>
+          </div>
+
+          <form method="get" id="filterForm" style="padding:1.25rem;">
+            {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+
+            <!-- Categories -->
+            <div style="margin-bottom:1.5rem;">
+              <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin-bottom:0.75rem;">Category</p>
+              {% for cat in categories %}
+              <label style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;cursor:pointer;font-size:0.875rem;color:var(--text-secondary);">
+                <input type="radio" name="category" value="{{ cat.slug }}"
+                       {% if category and category.slug == cat.slug %}checked{% endif %}
+                       onchange="document.getElementById('filterForm').submit()"
+                       style="accent-color:var(--gold);">
+                {{ cat.name }}
+                <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted);">({{ cat.product_count }})</span>
+              </label>
+              {% endfor %}
+            </div>
+
+            <div style="border-top:1px solid var(--border);margin-bottom:1.5rem;"></div>
+
+            <!-- Brands -->
+            {% if brands %}
+            <div style="margin-bottom:1.5rem;">
+              <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin-bottom:0.75rem;">Brand</p>
+              <select name="brand" class="form-control" style="padding:0.5rem;" onchange="document.getElementById('filterForm').submit()">
+                <option value="">All Brands</option>
+                {% for brand in brands %}
+                <option value="{{ brand.slug }}" {% if selected_brand == brand.slug %}selected{% endif %}>{{ brand.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-bottom:1.5rem;"></div>
+            {% endif %}
+
+            <!-- Price Range -->
+            <div style="margin-bottom:1.5rem;">
+              <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin-bottom:0.75rem;">Price Range</p>
+              <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem;">
+                <span style="font-size:0.8rem;color:var(--text-muted);" id="minPriceDisplay">${{ min_price|default:'0' }}</span>
+                <div style="flex:1;height:2px;background:var(--gold-gradient);border-radius:2px;"></div>
+                <span style="font-size:0.8rem;color:var(--text-muted);" id="maxPriceDisplay">${{ max_price|default:'1000' }}</span>
+              </div>
+              <input type="range" id="minPrice" name="min_price" min="0" max="999" value="{{ min_price|default:'0' }}" style="width:100%;accent-color:var(--gold);">
+              <input type="range" id="maxPrice" name="max_price" min="1" max="1000" value="{{ max_price|default:'1000' }}" style="width:100%;accent-color:var(--gold);">
+            </div>
+
+            <div style="border-top:1px solid var(--border);margin-bottom:1.5rem;"></div>
+
+            <!-- Quick Filters -->
+            <div>
+              <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin-bottom:0.75rem;">Type</p>
+              {% for label, val in filter_options %}
+              <label style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;cursor:pointer;font-size:0.875rem;color:var(--text-secondary);">
+                <input type="radio" name="filter" value="{{ val }}"
+                       {% if request.GET.filter == val %}checked{% endif %}
+                       onchange="document.getElementById('filterForm').submit()"
+                       style="accent-color:var(--gold);">
+                {{ label }}
+              </label>
+              {% endfor %}
+            </div>
+
+            <button type="submit" class="btn-luxe btn-primary w-100 mt-3">Apply Filters</button>
+          </form>
+        </div>
+      </aside>
+
+      <!-- ===== PRODUCT GRID ===== -->
+      <div>
+        <!-- Top bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap;">
+          <div class="filter-tabs" style="margin-bottom:0;">
+            <a href="?{% if search_query %}q={{ search_query }}&{% endif %}" class="filter-tab {% if not request.GET.filter %}active{% endif %}">All</a>
+            <a href="?filter=new{% if search_query %}&q={{ search_query }}{% endif %}" class="filter-tab {% if request.GET.filter == 'new' %}active{% endif %}">New</a>
+            <a href="?filter=trending{% if search_query %}&q={{ search_query }}{% endif %}" class="filter-tab {% if request.GET.filter == 'trending' %}active{% endif %}">🔥 Trending</a>
+            <a href="?filter=featured{% if search_query %}&q={{ search_query }}{% endif %}" class="filter-tab {% if request.GET.filter == 'featured' %}active{% endif %}">Featured</a>
+            <a href="?filter=sale{% if search_query %}&q={{ search_query }}{% endif %}" class="filter-tab {% if request.GET.filter == 'sale' %}active{% endif %}">Sale</a>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Sort by:</label>
+            <select class="form-control" style="padding:0.5rem 0.75rem;width:auto;font-size:0.8rem;" onchange="window.location.href=this.value">
+              <option value="?sort=newest{% if request.GET.filter %}&filter={{ request.GET.filter }}{% endif %}" {% if current_sort == 'newest' %}selected{% endif %}>Newest</option>
+              <option value="?sort=price_asc{% if request.GET.filter %}&filter={{ request.GET.filter }}{% endif %}" {% if current_sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+              <option value="?sort=price_desc{% if request.GET.filter %}&filter={{ request.GET.filter }}{% endif %}" {% if current_sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+              <option value="?sort=name_asc{% if request.GET.filter %}&filter={{ request.GET.filter }}{% endif %}" {% if current_sort == 'name_asc' %}selected{% endif %}>Name A–Z</option>
+            </select>
+          </div>
+        </div>
+
+        {% if products %}
+        <div class="products-grid">
+          {% for product in products %}
+            {% include 'includes/product_card.html' with product=product %}
+          {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div style="display:flex;justify-content:center;gap:0.5rem;margin-top:3rem;flex-wrap:wrap;">
+          {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.filter %}&filter={{ request.GET.filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn-luxe btn-dark-outline">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+          {% endif %}
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="btn-luxe btn-primary">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?page={{ num }}{% if request.GET.filter %}&filter={{ request.GET.filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn-luxe btn-dark-outline">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if request.GET.filter %}&filter={{ request.GET.filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn-luxe btn-dark-outline">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div style="text-align:center;padding:5rem 2rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);">
+          <div style="font-size:4rem;margin-bottom:1rem;">🔍</div>
+          <h3 class="display-font" style="font-size:1.8rem;margin-bottom:0.75rem;">No products found</h3>
+          <p style="color:var(--text-muted);margin-bottom:1.5rem;">Try adjusting your filters or search terms.</p>
+          <a href="{% url 'store:product_list' %}" class="btn-luxe btn-primary">Browse All Products</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Pass filter options to template context
+</script>
+{% endblock %}

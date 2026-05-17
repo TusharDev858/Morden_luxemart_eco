@@ -1,0 +1,99 @@
+{% load static %}
+<div class="product-card animate-in">
+  <!-- Image -->
+  <div class="product-image-wrap">
+    <a href="{{ product.get_absolute_url }}">
+      {% if product.main_image %}
+        <img src="{{ product.main_image.url }}" alt="{{ product.name }}" loading="lazy">
+      {% else %}
+        <div class="product-no-image">🛍️</div>
+      {% endif %}
+    </a>
+
+    <!-- Badges -->
+    <div class="product-badges">
+      {% if product.discount_percent > 0 %}
+        <span class="badge badge-sale">-{{ product.discount_percent }}%</span>
+      {% endif %}
+      {% if product.is_new_arrival %}
+        <span class="badge badge-new">New</span>
+      {% endif %}
+      {% if product.is_trending %}
+        <span class="badge badge-trending">🔥 Hot</span>
+      {% endif %}
+      {% if product.stock_status == 'out_of_stock' %}
+        <span class="badge badge-out">Out of Stock</span>
+      {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="product-actions">
+      {% if user.is_authenticated %}
+      <button class="action-btn {% if product.id in wishlist_ids %}wishlisted{% endif %}"
+              data-wishlist="{{ product.id }}"
+              title="{% if product.id in wishlist_ids %}Remove from wishlist{% else %}Add to wishlist{% endif %}">
+        <i class="bi bi-heart{% if product.id in wishlist_ids %}-fill{% endif %}"></i>
+      </button>
+      {% else %}
+      <a href="{% url 'users:login' %}?next={{ request.path }}" class="action-btn" title="Login to wishlist">
+        <i class="bi bi-heart"></i>
+      </a>
+      {% endif %}
+      <a href="{{ product.get_absolute_url }}" class="action-btn" title="Quick view">
+        <i class="bi bi-eye"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="product-info">
+    <div class="product-category">{{ product.category.name }}</div>
+    <a href="{{ product.get_absolute_url }}" style="text-decoration:none;">
+      <h3 class="product-name">{{ product.name }}</h3>
+    </a>
+
+    <!-- Rating -->
+    <div class="product-rating">
+      <div class="stars">
+        {% for i in "12345" %}
+        <i class="bi bi-star{% if forloop.counter <= product.average_rating %}-fill{% elif forloop.counter <= product.average_rating|add:"0.5" %}-half{% endif %} star {% if forloop.counter > product.average_rating %}empty{% endif %}"></i>
+        {% endfor %}
+      </div>
+      <span class="rating-count">({{ product.review_count }})</span>
+    </div>
+
+    <!-- Price -->
+    <div class="product-price">
+      <span class="price-current">${{ product.current_price }}</span>
+      {% if product.discount_price %}
+        <span class="price-original">${{ product.price }}</span>
+        <span class="price-discount">Save ${{ product.savings }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Footer: stock + cart -->
+    <div class="product-footer">
+      <span class="stock-status
+        {% if product.stock_status == 'in_stock' %}stock-in
+        {% elif product.stock_status == 'low_stock' %}stock-low
+        {% else %}stock-out{% endif %}">
+        {% if product.stock_status == 'in_stock' %}● In Stock
+        {% elif product.stock_status == 'low_stock' %}● Low Stock ({{ product.stock_quantity }} left)
+        {% elif product.stock_status == 'pre_order' %}● Pre-Order
+        {% else %}✕ Out of Stock{% endif %}
+      </span>
+
+      {% if product.stock_status != 'out_of_stock' %}
+      <form action="{% url 'cart:add' product.id %}" method="post" style="flex:1;" id="addCartForm-{{ product.id }}">
+        {% csrf_token %}
+        <input type="hidden" name="quantity" value="1">
+        <button type="submit" class="add-cart-btn" data-add-cart="{{ product.id }}">
+          <i class="bi bi-bag-plus"></i> Add to Cart
+        </button>
+      </form>
+      {% else %}
+      <button class="add-cart-btn" disabled>Out of Stock</button>
+      {% endif %}
+    </div>
+  </div>
+</div>

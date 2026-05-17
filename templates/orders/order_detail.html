@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Order #{{ order.order_number }} – LuxeMart{% endblock %}
+{% block content %}
+
+<div class="page-hero" style="padding:2rem 0;">
+  <div class="container">
+    <div class="breadcrumb-luxe mb-2">
+      <a href="{% url 'store:home' %}">Home</a><span class="breadcrumb-sep">/</span>
+      <a href="{% url 'users:dashboard' %}">Account</a><span class="breadcrumb-sep">/</span>
+      <a href="{% url 'orders:order_list' %}">Orders</a><span class="breadcrumb-sep">/</span>
+      <span>#{{ order.order_number }}</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <h1>Order #{{ order.order_number }}</h1>
+        <p style="color:var(--text-muted);margin-top:0.25rem;font-size:0.875rem;">Placed on {{ order.created_at|date:"F j, Y \a\t g:i A" }}</p>
+      </div>
+      <span style="padding:0.4rem 1.25rem;border-radius:var(--radius-full);font-size:0.85rem;font-weight:700;
+        {% if order.status == 'delivered' %}background:#d1fae5;color:#065f46;
+        {% elif order.status == 'shipped' or order.status == 'out_for_delivery' %}background:#dbeafe;color:#1d4ed8;
+        {% elif order.status == 'cancelled' %}background:#fee2e2;color:#991b1b;
+        {% elif order.status == 'confirmed' or order.status == 'processing' %}background:#e0f2fe;color:#0369a1;
+        {% else %}background:#fef3c7;color:#92400e;{% endif %}">
+        {{ order.get_status_display }}
+      </span>
+    </div>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:2rem;align-items:start;">
+
+      <!-- LEFT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+        <!-- Order Tracking Steps -->
+        {% if order.status != 'cancelled' and order.status != 'refunded' %}
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:2rem;">
+          <h5 style="font-size:1rem;font-weight:700;margin-bottom:1.75rem;">Order Progress</h5>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;position:relative;">
+            <!-- Progress line -->
+            <div style="position:absolute;top:18px;left:18px;right:18px;height:3px;background:var(--border);border-radius:2px;z-index:0;"></div>
+
+            {% with statuses="pending,confirmed,processing,shipped,out_for_delivery,delivered" %}
+            {% with current=order.status %}
+
+            <!-- pending -->
+            {% with done=True %}
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0.6rem;z-index:1;flex:1;">
+              <div style="width:36px;height:36px;border-radius:50%;background:var(--gold-gradient);border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-check-lg" style="color:white;font-size:0.8rem;"></i>
+              </div>
+              <span style="font-size:0.68rem;text-align:center;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Placed</span>
+            </div>
+            {% endwith %}
+
+            <!-- confirmed -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0.6rem;z-index:1;flex:1;">
+              <div style="width:36px;height:36px;border-radius:50%;
+                {% if order.status == 'confirmed' or order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}background:var(--gold-gradient);border:3px solid var(--gold);{% else %}background:var(--bg-card);border:3px solid var(--border);{% endif %}
+                display:flex;align-items:center;justify-content:center;">
+                {% if order.status == 'confirmed' or order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}
+                <i class="bi bi-check-lg" style="color:white;font-size:0.8rem;"></i>
+                {% else %}<div style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>{% endif %}
+              </div>
+              <span style="font-size:0.68rem;text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;
+                {% if order.status == 'confirmed' or order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}color:var(--gold);{% else %}color:var(--text-muted);{% endif %}">Confirmed</span>
+            </div>
+
+            <!-- processing -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0.6rem;z-index:1;flex:1;">
+              <div style="width:36px;height:36px;border-radius:50%;
+                {% if order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}background:var(--gold-gradient);border:3px solid var(--gold);{% else %}background:var(--bg-card);border:3px solid var(--border);{% endif %}
+                display:flex;align-items:center;justify-content:center;">
+                {% if order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}
+                <i class="bi bi-check-lg" style="color:white;font-size:0.8rem;"></i>
+                {% else %}<div style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>{% endif %}
+              </div>
+              <span style="font-size:0.68rem;text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;
+                {% if order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}color:var(--gold);{% else %}color:var(--text-muted);{% endif %}">Processing</span>
+            </div>
+
+            <!-- shipped -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0.6rem;z-index:1;flex:1;">
+              <div style="width:36px;height:36px;border-radius:50%;
+                {% if order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}background:var(--gold-gradient);border:3px solid var(--gold);{% else %}background:var(--bg-card);border:3px solid var(--border);{% endif %}
+                display:flex;align-items:center;justify-content:center;">
+                {% if order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}
+                <i class="bi bi-check-lg" style="color:white;font-size:0.8rem;"></i>
+                {% else %}<div style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>{% endif %}
+              </div>
+              <span style="font-size:0.68rem;text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;
+                {% if order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}color:var(--gold);{% else %}color:var(--text-muted);{% endif %}">Shipped</span>
+            </div>
+
+            <!-- delivered -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0.6rem;z-index:1;flex:1;">
+              <div style="width:36px;height:36px;border-radius:50%;
+                {% if order.status == 'delivered' %}background:var(--gold-gradient);border:3px solid var(--gold);{% else %}background:var(--bg-card);border:3px solid var(--border);{% endif %}
+                display:flex;align-items:center;justify-content:center;">
+                {% if order.status == 'delivered' %}
+                <i class="bi bi-check-lg" style="color:white;font-size:0.8rem;"></i>
+                {% else %}<div style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>{% endif %}
+              </div>
+              <span style="font-size:0.68rem;text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;
+                {% if order.status == 'delivered' %}color:var(--gold);{% else %}color:var(--text-muted);{% endif %}">Delivered</span>
+            </div>
+
+            {% endwith %}{% endwith %}
+          </div>
+
+          {% if order.tracking_number %}
+          <div style="margin-top:1.5rem;padding:0.85rem 1.25rem;background:var(--bg-secondary);border-radius:var(--radius-md);font-size:0.85rem;display:flex;align-items:center;gap:0.75rem;border:1px solid var(--border);">
+            <i class="bi bi-truck" style="color:var(--gold);font-size:1.1rem;"></i>
+            <span>Tracking Number: <strong>{{ order.tracking_number }}</strong></span>
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <div style="padding:1.25rem 1.5rem;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius-xl);display:flex;align-items:center;gap:0.75rem;">
+          <i class="bi bi-x-circle-fill" style="color:#ef4444;font-size:1.4rem;flex-shrink:0;"></i>
+          <div>
+            <div style="font-weight:700;color:#991b1b;">Order {{ order.get_status_display }}</div>
+            <div style="font-size:0.85rem;color:#b91c1c;margin-top:2px;">
+              {% if order.status == 'cancelled' %}This order was cancelled.{% else %}A refund has been initiated.{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Items -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;">
+          <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg-secondary);display:flex;justify-content:space-between;align-items:center;">
+            <h5 style="margin:0;font-size:1rem;font-weight:700;">Items Ordered</h5>
+            <span style="font-size:0.8rem;color:var(--text-muted);">{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
+          </div>
+          {% for item in order.items.all %}
+          <div style="display:flex;gap:1rem;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);align-items:flex-start;">
+            {% if item.product_image %}
+            <img src="{{ item.product_image }}" alt="{{ item.product_name }}" style="width:76px;height:76px;border-radius:var(--radius-md);object-fit:cover;flex-shrink:0;border:1px solid var(--border);">
+            {% else %}
+            <div style="width:76px;height:76px;border-radius:var(--radius-md);background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;border:1px solid var(--border);">🛍️</div>
+            {% endif %}
+            <div style="flex:1;">
+              <div style="font-weight:600;margin-bottom:0.2rem;">{{ item.product_name }}</div>
+              {% if item.variant_info %}<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.2rem;">{{ item.variant_info }}</div>{% endif %}
+              <div style="font-size:0.82rem;color:var(--text-muted);">{{ item.quantity }} × ${{ item.unit_price }}</div>
+            </div>
+            <div style="font-weight:700;font-size:0.95rem;flex-shrink:0;">${{ item.total_price }}</div>
+          </div>
+          {% endfor %}
+          <!-- Order totals -->
+          <div style="padding:1.25rem 1.5rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.875rem;margin-bottom:0.5rem;"><span style="color:var(--text-muted);">Subtotal</span><span>${{ order.subtotal }}</span></div>
+            {% if order.discount_amount > 0 %}<div style="display:flex;justify-content:space-between;font-size:0.875rem;margin-bottom:0.5rem;color:#10b981;"><span>Discount{% if order.coupon_code %} ({{ order.coupon_code }}){% endif %}</span><span>−${{ order.discount_amount }}</span></div>{% endif %}
+            <div style="display:flex;justify-content:space-between;font-size:0.875rem;margin-bottom:0.5rem;"><span style="color:var(--text-muted);">Shipping</span><span>{% if order.shipping_cost == 0 %}<span style="color:#10b981;">Free</span>{% else %}${{ order.shipping_cost }}{% endif %}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:0.875rem;margin-bottom:0.75rem;"><span style="color:var(--text-muted);">Tax</span><span>${{ order.tax_amount }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:1.15rem;font-weight:700;padding-top:0.75rem;border-top:2px solid var(--border);"><span>Total</span><span style="color:var(--gold);">${{ order.total_price }}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <!-- Payment info -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.5rem;">
+          <h6 style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:1rem;font-weight:700;">Payment</h6>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+            <span style="font-size:0.875rem;color:var(--text-secondary);">Method</span>
+            <span style="font-size:0.875rem;font-weight:600;">{{ order.get_payment_method_display }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.875rem;color:var(--text-secondary);">Status</span>
+            <span style="padding:0.2rem 0.75rem;border-radius:var(--radius-full);font-size:0.75rem;font-weight:700;
+              {% if order.payment_status == 'paid' %}background:#d1fae5;color:#065f46;{% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+              {{ order.get_payment_status_display }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Shipping address -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.5rem;">
+          <h6 style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:1rem;font-weight:700;">Shipping To</h6>
+          <div style="font-size:0.875rem;line-height:1.8;color:var(--text-secondary);">
+            <strong style="color:var(--text-primary);">{{ order.shipping_name }}</strong><br>
+            {{ order.shipping_address }}<br>
+            {{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_postal }}<br>
+            {{ order.shipping_country }}<br>
+            <span style="color:var(--text-muted);">{{ order.shipping_phone }}</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <a href="{% url 'orders:order_list' %}" class="btn-luxe btn-dark-outline w-100" style="text-align:center;">
+          <i class="bi bi-arrow-left"></i> Back to Orders
+        </a>
+        <a href="{% url 'contact:contact' %}" class="btn-luxe btn-ghost w-100" style="text-align:center;font-size:0.85rem;color:var(--text-muted);">
+          <i class="bi bi-headset"></i> Need help with this order?
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

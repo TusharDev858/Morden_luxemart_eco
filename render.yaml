@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: luxemart
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn ecommerce.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: "False"

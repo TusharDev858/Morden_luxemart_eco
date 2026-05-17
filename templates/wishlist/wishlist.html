@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}My Wishlist – LuxeMart{% endblock %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="breadcrumb-luxe mb-2">
+      <a href="{% url 'store:home' %}">Home</a><span class="breadcrumb-sep">/</span>
+      <a href="{% url 'users:dashboard' %}">Account</a><span class="breadcrumb-sep">/</span><span>Wishlist</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <h1>My Wishlist</h1>
+        <p style="color:var(--text-muted);margin-top:0.4rem;">{{ items.count }} saved item{{ items.count|pluralize }}</p>
+      </div>
+      {% if items %}<a href="{% url 'store:product_list' %}" class="btn-luxe btn-dark-outline"><i class="bi bi-bag-plus"></i> Continue Shopping</a>{% endif %}
+    </div>
+  </div>
+</div>
+<section class="section-sm">
+  <div class="container">
+    {% if items %}
+    <div class="products-grid">
+      {% for item in items %}{% include 'includes/product_card.html' with product=item.product %}{% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:7rem 2rem;max-width:480px;margin:0 auto;">
+      <div style="font-size:5rem;margin-bottom:1.5rem;">💝</div>
+      <h2 class="display-font" style="font-size:2.2rem;margin-bottom:0.75rem;">Your wishlist is empty</h2>
+      <p style="color:var(--text-muted);line-height:1.7;margin-bottom:2rem;">Save your favourite products here. Browse our collections and tap the ♡ heart icon on any product.</p>
+      <a href="{% url 'store:product_list' %}" class="btn-luxe btn-primary btn-lg"><i class="bi bi-bag-heart"></i> Explore Products</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

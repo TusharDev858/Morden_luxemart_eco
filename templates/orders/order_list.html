@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}My Orders – LuxeMart{% endblock %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="breadcrumb-luxe mb-2">
+      <a href="{% url 'store:home' %}">Home</a><span class="breadcrumb-sep">/</span>
+      <a href="{% url 'users:dashboard' %}">Account</a><span class="breadcrumb-sep">/</span><span>Orders</span>
+    </div>
+    <h1>My Orders</h1>
+    <p style="color:var(--text-muted);margin-top:0.4rem;">{{ orders.count }} order{{ orders.count|pluralize }} total</p>
+  </div>
+</div>
+<section class="section-sm">
+  <div class="container">
+    {% if orders %}
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      {% for order in orders %}
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.boxShadow='none'">
+        <!-- Order header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;background:var(--bg-secondary);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:0.75rem;">
+          <div style="display:flex;gap:2rem;flex-wrap:wrap;">
+            <div><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:2px;">Order</div><div style="font-weight:700;font-size:0.9rem;">#{{ order.order_number }}</div></div>
+            <div><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:2px;">Date</div><div style="font-size:0.875rem;">{{ order.created_at|date:"M j, Y" }}</div></div>
+            <div><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:2px;">Items</div><div style="font-size:0.875rem;">{{ order.items.count }}</div></div>
+            <div><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:2px;">Total</div><div style="font-weight:700;color:var(--gold);">${{ order.total_price }}</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span style="padding:0.3rem 0.85rem;border-radius:var(--radius-full);font-size:0.75rem;font-weight:700;
+              {% if order.status == 'delivered' %}background:#d1fae5;color:#065f46;
+              {% elif order.status == 'shipped' or order.status == 'out_for_delivery' %}background:#dbeafe;color:#1d4ed8;
+              {% elif order.status == 'cancelled' %}background:#fee2e2;color:#991b1b;
+              {% elif order.status == 'confirmed' or order.status == 'processing' %}background:#e0f2fe;color:#0369a1;
+              {% else %}background:#fef3c7;color:#92400e;{% endif %}">
+              {{ order.get_status_display }}
+            </span>
+            <a href="{% url 'orders:order_detail' order.pk %}" class="btn-luxe btn-dark-outline btn-sm">View Details</a>
+          </div>
+        </div>
+        <!-- Order items preview -->
+        <div style="padding:1rem 1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
+          {% for item in order.items.all|slice:":4" %}
+          <div title="{{ item.product_name }}" style="position:relative;">
+            {% if item.product_image %}<img src="{{ item.product_image }}" alt="{{ item.product_name }}" style="width:56px;height:56px;border-radius:var(--radius-md);object-fit:cover;border:1px solid var(--border);">
+            {% else %}<div style="width:56px;height:56px;border-radius:var(--radius-md);background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:1px solid var(--border);">🛍️</div>{% endif %}
+            {% if item.quantity > 1 %}<span style="position:absolute;top:-4px;right:-4px;background:var(--gold);color:white;font-size:0.65rem;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;">{{ item.quantity }}</span>{% endif %}
+          </div>
+          {% endfor %}
+          {% if order.items.count > 4 %}<span style="font-size:0.8rem;color:var(--text-muted);">+{{ order.items.count|add:"-4" }} more</span>{% endif %}
+          <div style="margin-left:auto;font-size:0.8rem;color:var(--text-muted);">{{ order.get_payment_method_display }} · {{ order.get_payment_status_display }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:7rem 2rem;max-width:480px;margin:0 auto;">
+      <div style="font-size:5rem;margin-bottom:1.5rem;">📦</div>
+      <h2 class="display-font" style="font-size:2.2rem;margin-bottom:0.75rem;">No orders yet</h2>
+      <p style="color:var(--text-muted);margin-bottom:2rem;">Explore our premium collection and place your first order today!</p>
+      <a href="{% url 'store:product_list' %}" class="btn-luxe btn-primary btn-lg">Start Shopping</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

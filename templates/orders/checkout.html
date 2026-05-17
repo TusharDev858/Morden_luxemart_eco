@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% block title %}Checkout – LuxeMart{% endblock %}
+
+{% block extra_css %}
+<script src="https://js.stripe.com/v3/"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero" style="padding:2rem 0;">
+  <div class="container">
+    <h1>Secure Checkout</h1>
+    <p style="color:var(--text-muted);margin-top:0.25rem;font-size:0.875rem;"><i class="bi bi-lock-fill" style="color:var(--gold);"></i> SSL Encrypted & Secure</p>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container">
+    <form action="{% url 'orders:place_order' %}" method="post" id="checkoutForm">
+      {% csrf_token %}
+      <input type="hidden" name="payment_intent_id" id="paymentIntentId">
+      <input type="hidden" name="payment_method" id="paymentMethodHidden" value="stripe">
+      <input type="hidden" id="stripePublicKey" value="{{ stripe_public_key }}">
+
+      <div style="display:grid;grid-template-columns:1fr 380px;gap:2rem;align-items:start;">
+
+        <!-- ===== LEFT: Address + Payment ===== -->
+        <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+          <!-- Shipping Address -->
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:2rem;">
+            <h5 style="font-size:1rem;font-weight:700;margin-bottom:1.5rem;display:flex;align-items:center;gap:0.5rem;">
+              <span style="width:28px;height:28px;background:var(--gold-gradient);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:700;">1</span>
+              Shipping Information
+            </h5>
+
+            {% if addresses %}
+            <div style="margin-bottom:1.5rem;">
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Saved Addresses</p>
+              <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                {% for addr in addresses %}
+                <label style="cursor:pointer;display:flex;align-items:flex-start;gap:0.75rem;padding:1rem;border:1.5px solid var(--border);border-radius:var(--radius-lg);transition:border-color 0.2s;"
+                       onclick="fillAddress(this,'{{ addr.full_name }}','{{ addr.shipping_email|default:user.email }}','{{ addr.phone }}','{{ addr.address_line_1 }}','{{ addr.city }}','{{ addr.state }}','{{ addr.postal_code }}','{{ addr.country }}')">
+                  <input type="radio" name="saved_addr" value="{{ addr.id }}" style="margin-top:3px;accent-color:var(--gold);">
+                  <div>
+                    <div style="font-weight:600;font-size:0.875rem;">{{ addr.full_name }}</div>
+                    <div style="font-size:0.8rem;color:var(--text-muted);">{{ addr.address_line_1 }}, {{ addr.city }}, {{ addr.state }} {{ addr.postal_code }}</div>
+                  </div>
+                </label>
+                {% endfor %}
+              </div>
+              <div style="margin:1rem 0;text-align:center;font-size:0.8rem;color:var(--text-muted);">— or enter new address —</div>
+            </div>
+            {% endif %}
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group" style="grid-column:span 2;">
+                <label class="form-label">Full Name *</label>
+                <input type="text" name="full_name" class="form-control" required placeholder="John Doe"
+                       value="{{ user.get_full_name|default:'' }}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email *</label>
+                <input type="email" name="email" class="form-control" required placeholder="john@example.com"
+                       value="{{ user.email|default:'' }}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone *</label>
+                <input type="tel" name="phone" class="form-control" required placeholder="+1 555 0000">
+              </div>
+              <div class="form-group" style="grid-column:span 2;">
+                <label class="form-label">Street Address *</label>
+                <input type="text" name="address" class="form-control" id="addrLine1" required placeholder="123 Main St">
+              </div>
+              <div class="form-group">
+                <label class="form-label">City *</label>
+                <input type="text" name="city" class="form-control" id="addrCity" required placeholder="New York">
+              </div>
+              <div class="form-group">
+                <label class="form-label">State *</label>
+                <input type="text" name="state" class="form-control" id="addrState" required placeholder="NY">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Postal Code *</label>
+                <input type="text" name="postal_code" class="form-control" id="addrPostal" required placeholder="10001">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Country *</label>
+                <input type="text" name="country" class="form-control" id="addrCountry" value="United States">
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Method -->
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:2rem;">
+            <h5 style="font-size:1rem;font-weight:700;margin-bottom:1.5rem;display:flex;align-items:center;gap:0.5rem;">
+              <span style="width:28px;height:28px;background:var(--gold-gradient);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:700;">2</span>
+              Payment Method
+            </h5>
+
+            <!-- Payment Tabs -->
+            <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;">
+              <button type="button" onclick="selectPayment('stripe', this)" id="stripeTab"
+                      style="flex:1;padding:0.75rem;border:2px solid var(--gold);border-radius:var(--radius-lg);background:rgba(184,147,90,0.05);font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--text-primary);transition:all 0.2s;">
+                <i class="bi bi-credit-card"></i> Card
+              </button>
+              <button type="button" onclick="selectPayment('paypal', this)" id="paypalTab"
+                      style="flex:1;padding:0.75rem;border:2px solid var(--border);border-radius:var(--radius-lg);background:transparent;font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--text-secondary);transition:all 0.2s;">
+                <i class="bi bi-paypal"></i> PayPal
+              </button>
+              <button type="button" onclick="selectPayment('cod', this)" id="codTab"
+                      style="flex:1;padding:0.75rem;border:2px solid var(--border);border-radius:var(--radius-lg);background:transparent;font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--text-secondary);transition:all 0.2s;">
+                <i class="bi bi-cash-coin"></i> COD
+              </button>
+            </div>
+
+            <!-- Stripe Card -->
+            <div id="stripeSection">
+              <div id="card-element" style="padding:1rem;border:1.5px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);"></div>
+              <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;"><i class="bi bi-lock-fill"></i> Secured by Stripe. We never store your card details.</p>
+            </div>
+
+            <!-- PayPal -->
+            <div id="paypalSection" style="display:none;">
+              <div style="background:var(--bg-secondary);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;">
+                <i class="bi bi-paypal" style="font-size:3rem;color:#0070ba;margin-bottom:0.75rem;display:block;"></i>
+                <p style="font-size:0.875rem;color:var(--text-secondary);">You'll be redirected to PayPal to complete payment securely.</p>
+                <div id="paypal-button-container" style="margin-top:1rem;"></div>
+              </div>
+            </div>
+
+            <!-- COD -->
+            <div id="codSection" style="display:none;">
+              <div style="background:var(--bg-secondary);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;">
+                <i class="bi bi-cash-coin" style="font-size:3rem;color:#10b981;margin-bottom:0.75rem;display:block;"></i>
+                <p style="font-size:0.875rem;color:var(--text-secondary);">Pay with cash when your order is delivered. Additional fee may apply.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== RIGHT: Order Summary ===== -->
+        <div style="position:sticky;top:calc(var(--navbar-height) + 1rem);">
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;">
+            <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg-secondary);">
+              <h5 style="margin:0;font-size:1rem;font-weight:700;">Order Summary</h5>
+            </div>
+            <!-- Items -->
+            <div style="padding:1rem 1.5rem;max-height:280px;overflow-y:auto;">
+              {% for item in cart.items.all %}
+              <div style="display:flex;gap:0.75rem;padding:0.75rem 0;border-bottom:1px solid var(--border);">
+                {% if item.product.main_image %}
+                <img src="{{ item.product.main_image.url }}" style="width:52px;height:52px;border-radius:var(--radius-md);object-fit:cover;background:var(--bg-secondary);flex-shrink:0;">
+                {% else %}
+                <div style="width:52px;height:52px;border-radius:var(--radius-md);background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;">🛍️</div>
+                {% endif %}
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:0.82rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ item.product.name }}</div>
+                  {% if item.variant %}<div style="font-size:0.75rem;color:var(--text-muted);">{{ item.variant }}</div>{% endif %}
+                  <div style="font-size:0.8rem;color:var(--text-muted);">Qty: {{ item.quantity }}</div>
+                </div>
+                <div style="font-size:0.875rem;font-weight:700;flex-shrink:0;">${{ item.total_price }}</div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Coupon -->
+            <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);">
+              <div style="display:flex;gap:0.5rem;">
+                <input type="text" id="couponInput" placeholder="Coupon code" class="form-control" style="font-size:0.85rem;">
+                <button type="button" id="applyCouponBtn" class="btn-luxe btn-dark-outline btn-sm" style="white-space:nowrap;">Apply</button>
+              </div>
+              <input type="hidden" name="coupon_code" id="couponCodeHidden" value="{{ cart.coupon_code }}">
+              <div id="couponMessage" style="font-size:0.78rem;margin-top:0.4rem;"></div>
+            </div>
+
+            <!-- Totals -->
+            <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);">
+              <div style="display:flex;justify-content:space-between;font-size:0.875rem;margin-bottom:0.5rem;">
+                <span style="color:var(--text-muted);">Subtotal</span>
+                <span>${{ subtotal }}</span>
+              </div>
+              {% if cart.coupon_discount > 0 %}
+              <div style="display:flex;justify-content:space-between;font-size:0.875rem;margin-bottom:0.5rem;color:#10b981;">
+                <span>Discount</span><span>-${{ cart.coupon_discount }}</span>
+              </div>
+              {% endif %}
+              <div style="display:flex;justify-content:space-between;font-size:0.875rem;margin-bottom:0.5rem;">
+                <span style="color:var(--text-muted);">Shipping</span>
+                <span>{% if shipping == 0 %}<span style="color:#10b981;">Free</span>{% else %}${{ shipping }}{% endif %}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.875rem;margin-bottom:0.75rem;">
+                <span style="color:var(--text-muted);">Tax (8%)</span>
+                <span>${{ tax }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:1.1rem;font-weight:700;padding-top:0.75rem;border-top:1px solid var(--border);">
+                <span>Total</span>
+                <span style="color:var(--gold);">${{ total }}</span>
+              </div>
+            </div>
+
+            <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);">
+              <button type="submit" class="btn-luxe btn-primary w-100" id="submitOrderBtn" style="font-size:0.95rem;padding:1rem;">
+                <i class="bi bi-lock-fill"></i> Place Order – ${{ total }}
+              </button>
+              <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:0.75rem;">
+                By placing your order, you agree to our Terms & Privacy Policy
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectPayment(method, btn) {
+  document.getElementById('paymentMethodHidden').value = method;
+  ['stripe','paypal','cod'].forEach(m => {
+    document.getElementById(m+'Section').style.display = m === method ? 'block' : 'none';
+    const tab = document.getElementById(m+'Tab');
+    if(m === method) {
+      tab.style.borderColor = 'var(--gold)';
+      tab.style.background = 'rgba(184,147,90,0.05)';
+      tab.style.color = 'var(--text-primary)';
+    } else {
+      tab.style.borderColor = 'var(--border)';
+      tab.style.background = 'transparent';
+      tab.style.color = 'var(--text-secondary)';
+    }
+  });
+}
+
+function fillAddress(el, name, email, phone, addr, city, state, postal, country) {
+  const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+  document.querySelector('[name="full_name"]').value = name;
+  document.querySelector('[name="email"]').value = email;
+  document.querySelector('[name="phone"]').value = phone;
+  setVal('addrLine1', addr); setVal('addrCity', city);
+  setVal('addrState', state); setVal('addrPostal', postal);
+  setVal('addrCountry', country);
+  document.querySelectorAll('[name="saved_addr"]').forEach(r => {
+    r.parentElement.style.borderColor = r.checked ? 'var(--gold)' : 'var(--border)';
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,431 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{% block meta_description %}LuxeMart – Premium E-Commerce. Shop the finest products with world-class service.{% endblock %}">
+  <title>{% block title %}LuxeMart – Premium Shopping{% endblock %}</title>
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Django messages as hidden elements -->
+{% if messages %}
+  {% for message in messages %}
+    <div class="django-message d-none" data-type="{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<!-- Toast Alert Container -->
+<div class="alert-container" id="alertContainer"></div>
+
+<!-- Cart Overlay + Sidebar -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-sidebar" id="cartSidebar">
+  <div class="cart-sidebar-header">
+    <div>
+      <h5 class="display-font mb-0" style="font-size:1.3rem;">Your Cart</h5>
+      <p style="font-size:0.8rem;color:var(--text-muted);">
+        {% if cart %}{{ cart.total_items }} item{{ cart.total_items|pluralize }}{% else %}0 items{% endif %}
+      </p>
+    </div>
+    <button class="btn-ghost nav-btn" id="cartCloseBtn"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <div class="cart-sidebar-items">
+    {% if cart and cart.items.all %}
+      {% for item in cart.items.all %}
+      <div class="cart-item-row" id="cart-item-{{ item.id }}">
+        {% if item.product.main_image %}
+          <img src="{{ item.product.main_image.url }}" class="cart-item-img" alt="{{ item.product.name }}">
+        {% else %}
+          <div class="cart-item-img d-flex align-items-center justify-content-center" style="background:var(--bg-secondary);">
+            <i class="bi bi-image text-muted"></i>
+          </div>
+        {% endif %}
+        <div class="cart-item-info">
+          <div class="cart-item-name">{{ item.product.name }}</div>
+          {% if item.variant %}<div style="font-size:0.75rem;color:var(--text-muted);">{{ item.variant }}</div>{% endif %}
+          <div class="cart-item-price">${{ item.unit_price }}</div>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="updateCartItem({{ item.id }}, {{ item.quantity|add:'-1' }})">−</button>
+            <span class="qty-display" id="qty-{{ item.id }}">{{ item.quantity }}</span>
+            <button class="qty-btn" onclick="updateCartItem({{ item.id }}, {{ item.quantity|add:'1' }})">+</button>
+          </div>
+        </div>
+        <button class="btn-ghost" style="padding:4px;color:var(--text-muted);" onclick="removeCartItem({{ item.id }})">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted);">
+        <i class="bi bi-cart3" style="font-size:3rem;opacity:0.3;display:block;margin-bottom:1rem;"></i>
+        <p>Your cart is empty</p>
+        <a href="{% url 'store:product_list' %}" class="btn-luxe btn-primary btn-sm mt-2" onclick="CartManager.close()">Shop Now</a>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if cart and cart.items.all %}
+  <div class="cart-sidebar-footer">
+    <div class="cart-total-row"><span>Subtotal</span><span>${{ cart.subtotal }}</span></div>
+    {% if cart.coupon_discount > 0 %}
+    <div class="cart-total-row" style="color:#10b981;"><span>Discount</span><span>-${{ cart.coupon_discount }}</span></div>
+    {% endif %}
+    <div class="cart-total-row"><span>Shipping</span><span>{% if cart.subtotal >= 75 %}Free{% else %}$9.99{% endif %}</span></div>
+    <div class="cart-total-row grand"><span>Total</span><span>${{ cart.total }}</span></div>
+    <div style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1.25rem;">
+      <a href="{% url 'orders:checkout' %}" class="btn-luxe btn-primary w-100">
+        <i class="bi bi-lock-fill"></i> Secure Checkout
+      </a>
+      <a href="{% url 'cart:detail' %}" class="btn-luxe btn-dark-outline w-100" style="text-align:center;">
+        View Full Cart
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</aside>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mobile-menu-header">
+    <a href="{% url 'store:home' %}" class="logo">
+      <div class="logo-icon"><i class="bi bi-gem"></i></div>
+      Luxe<span>Mart</span>
+    </a>
+    <button class="nav-btn btn-ghost" id="mobileMenuClose"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <nav>
+    <a href="{% url 'store:home' %}" class="mobile-nav-link"><i class="bi bi-house"></i> Home</a>
+    <a href="{% url 'store:product_list' %}" class="mobile-nav-link"><i class="bi bi-grid"></i> All Products</a>
+    {% for cat in nav_categories %}
+    <a href="{{ cat.get_absolute_url }}" class="mobile-nav-link"><i class="bi {{ cat.icon|default:'bi-tag' }}"></i> {{ cat.name }}</a>
+    {% endfor %}
+    <a href="{% url 'orders:tracking' %}" class="mobile-nav-link"><i class="bi bi-geo-alt"></i> Track Order</a>
+    <a href="{% url 'contact:contact' %}" class="mobile-nav-link"><i class="bi bi-envelope"></i> Contact</a>
+    {% if user.is_authenticated %}
+    <a href="{% url 'users:dashboard' %}" class="mobile-nav-link"><i class="bi bi-person"></i> My Account</a>
+    <a href="{% url 'users:logout' %}" class="mobile-nav-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
+    {% else %}
+    <a href="{% url 'users:login' %}" class="mobile-nav-link"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+    <a href="{% url 'users:register' %}" class="mobile-nav-link"><i class="bi bi-person-plus"></i> Register</a>
+    {% endif %}
+  </nav>
+  <!-- Mobile search -->
+  <div style="margin-top:1.5rem;">
+    <form action="{% url 'store:search' %}" method="get">
+      <div style="position:relative;">
+        <input type="text" name="q" placeholder="Search products…" class="form-control" style="padding-left:2.5rem;">
+        <i class="bi bi-search" style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-muted);"></i>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar-luxe" id="navbar">
+  <div class="navbar-inner">
+    <!-- Logo -->
+    <a href="{% url 'store:home' %}" class="logo">
+      <div class="logo-icon"><i class="bi bi-gem"></i></div>
+      Luxe<span>Mart</span>
+    </a>
+
+    <!-- Nav Links -->
+    <ul class="nav-links">
+      <li><a href="{% url 'store:home' %}">Home</a></li>
+      <li><a href="{% url 'store:product_list' %}">Shop</a></li>
+      {% for cat in nav_categories|slice:":4" %}
+      <li><a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a></li>
+      {% endfor %}
+      <li><a href="{% url 'contact:faq' %}">FAQ</a></li>
+      <li><a href="{% url 'contact:contact' %}">Contact</a></li>
+    </ul>
+
+    <!-- Search -->
+    <div class="nav-search">
+      <i class="bi bi-search nav-search-icon" style="font-size:0.85rem;"></i>
+      <form action="{% url 'store:search' %}" method="get" style="margin:0;">
+        <input type="text" name="q" id="navSearchInput"
+               placeholder="Search products, brands…"
+               value="{{ request.GET.q|default:'' }}"
+               autocomplete="off">
+      </form>
+    </div>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+      <!-- Theme Toggle -->
+      <button class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle theme"></button>
+
+      <!-- Wishlist -->
+      {% if user.is_authenticated %}
+      <a href="{% url 'wishlist:list' %}" class="nav-btn" title="Wishlist">
+        <i class="bi bi-heart" style="font-size:1.1rem;"></i>
+        {% if wishlist_count > 0 %}
+        <span class="nav-badge wishlist-count-badge">{{ wishlist_count }}</span>
+        {% endif %}
+      </a>
+      {% endif %}
+
+      <!-- Cart -->
+      <button class="nav-btn" id="cartToggleBtn" title="Cart">
+        <i class="bi bi-bag" style="font-size:1.1rem;"></i>
+        {% if cart_count > 0 %}
+        <span class="nav-badge cart-count-badge">{{ cart_count }}</span>
+        {% endif %}
+      </button>
+
+      <!-- User -->
+      {% if user.is_authenticated %}
+      <div style="position:relative;" class="user-dropdown-wrap">
+        <button class="nav-btn" id="userMenuBtn" title="Account">
+          {% if user.avatar %}
+          <img src="{{ user.avatar.url }}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">
+          {% else %}
+          <i class="bi bi-person-circle" style="font-size:1.1rem;"></i>
+          {% endif %}
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="user-dropdown-header">
+            <strong>{{ user.get_full_name|default:user.email }}</strong>
+            <span style="font-size:0.75rem;color:var(--text-muted);">{{ user.email }}</span>
+          </div>
+          <a href="{% url 'users:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+          <a href="{% url 'users:profile' %}"><i class="bi bi-person"></i> Profile</a>
+          <a href="{% url 'orders:order_list' %}"><i class="bi bi-bag-check"></i> My Orders</a>
+          <a href="{% url 'wishlist:list' %}"><i class="bi bi-heart"></i> Wishlist</a>
+          {% if user.is_staff %}
+          <a href="/admin/" style="color:var(--gold);"><i class="bi bi-shield-check"></i> Admin Panel</a>
+          {% endif %}
+          <div style="border-top:1px solid var(--border);margin:0.25rem 0;"></div>
+          <a href="{% url 'users:logout' %}" style="color:#ef4444;"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+      </div>
+      {% else %}
+      <a href="{% url 'users:login' %}" class="nav-btn" title="Login">
+        <i class="bi bi-person" style="font-size:1.1rem;"></i>
+      </a>
+      {% endif %}
+
+      <!-- Mobile hamburger -->
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Page Content -->
+<div class="page-wrapper">
+  {% block content %}{% endblock %}
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <!-- Brand -->
+      <div>
+        <a href="{% url 'store:home' %}" class="logo footer-logo">
+          <div class="logo-icon"><i class="bi bi-gem"></i></div>
+          Luxe<span>Mart</span>
+        </a>
+        <p class="footer-desc mt-3">
+          Your destination for premium products. We curate the finest goods from around the world, delivered with care to your doorstep.
+        </p>
+        <div class="social-links">
+          <a href="#" class="social-link" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+          <a href="#" class="social-link" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+          <a href="#" class="social-link" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
+          <a href="#" class="social-link" aria-label="Pinterest"><i class="bi bi-pinterest"></i></a>
+          <a href="#" class="social-link" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h6 class="footer-heading">Shop</h6>
+        <ul class="footer-links">
+          <li><a href="{% url 'store:product_list' %}?filter=new">New Arrivals</a></li>
+          <li><a href="{% url 'store:product_list' %}?filter=trending">Trending</a></li>
+          <li><a href="{% url 'store:product_list' %}?filter=featured">Featured</a></li>
+          <li><a href="{% url 'store:product_list' %}?filter=sale">Sale</a></li>
+          {% for cat in nav_categories|slice:":4" %}
+          <li><a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div>
+        <h6 class="footer-heading">Support</h6>
+        <ul class="footer-links">
+          <li><a href="{% url 'contact:faq' %}">FAQ</a></li>
+          <li><a href="{% url 'contact:contact' %}">Contact Us</a></li>
+          <li><a href="{% url 'orders:tracking' %}">Track Order</a></li>
+          {% if user.is_authenticated %}
+          <li><a href="{% url 'orders:order_list' %}">My Orders</a></li>
+          {% endif %}
+          <li><a href="#">Return Policy</a></li>
+          <li><a href="#">Shipping Info</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+        </ul>
+      </div>
+
+      <!-- Contact -->
+      <div>
+        <h6 class="footer-heading">Get in Touch</h6>
+        <div class="contact-item"><i class="bi bi-geo-alt-fill"></i><span>123 Luxury Ave, New York, NY 10001</span></div>
+        <div class="contact-item"><i class="bi bi-telephone-fill"></i><span>+1 (555) 123-4567</span></div>
+        <div class="contact-item"><i class="bi bi-envelope-fill"></i><span>hello@luxemart.com</span></div>
+        <div class="contact-item"><i class="bi bi-clock-fill"></i><span>Mon–Fri: 9am – 6pm EST</span></div>
+        <!-- Mini newsletter -->
+        <div style="margin-top:1.25rem;">
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;">Get exclusive offers:</p>
+          <form class="newsletter-form" style="display:flex;gap:0.5rem;">
+            {% csrf_token %}
+            <input type="email" class="newsletter-input" placeholder="your@email.com" required style="flex:1;padding:0.6rem 0.75rem;font-size:0.8rem;">
+            <button type="submit" class="btn-luxe btn-primary btn-sm">Go</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trust Badges -->
+    <div style="padding:1.5rem 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:1.5rem;">
+      <div class="trust-badges" style="justify-content:center;">
+        <div class="trust-badge"><i class="bi bi-shield-lock-fill"></i> Secure Payments</div>
+        <div class="trust-badge"><i class="bi bi-truck"></i> Free Shipping $75+</div>
+        <div class="trust-badge"><i class="bi bi-arrow-repeat"></i> 30-Day Returns</div>
+        <div class="trust-badge"><i class="bi bi-headset"></i> 24/7 Support</div>
+        <div class="trust-badge"><i class="bi bi-star-fill"></i> Premium Quality</div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="footer-copyright">© 2025 LuxeMart. All rights reserved. Crafted with ♥</p>
+      <div class="payment-icons">
+        <div class="payment-icon">VISA</div>
+        <div class="payment-icon">MC</div>
+        <div class="payment-icon">AMEX</div>
+        <div class="payment-icon">PayPal</div>
+        <div class="payment-icon">Stripe</div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- AI Chatbot -->
+<button class="chatbot-btn" id="chatbotBtn" title="Chat with us">
+  <i class="bi bi-chat-dots-fill"></i>
+</button>
+<div class="chatbot-window" id="chatbotWindow">
+  <div class="chatbot-header">
+    <div>
+      <h4>LuxeMart Assistant</h4>
+      <p>● Online · Typically replies instantly</p>
+    </div>
+    <button style="background:none;border:none;color:white;cursor:pointer;font-size:1rem;" id="chatClose">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+  <div class="chatbot-messages" id="chatMessages">
+    <div class="chat-msg bot">👋 Hi! I'm your LuxeMart assistant. Ask me about orders, shipping, returns, or products!</div>
+    <div class="chat-msg bot">You can also type: <em>order status</em>, <em>shipping info</em>, <em>return policy</em>, or <em>payment methods</em>.</div>
+  </div>
+  <div class="chatbot-input">
+    <input type="text" id="chatInput" placeholder="Type a message…">
+    <button class="btn-luxe btn-primary btn-icon" id="chatSendBtn" style="flex-shrink:0;">
+      <i class="bi bi-send-fill"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/main.js' %}"></script>
+
+<!-- User Dropdown -->
+<style>
+.user-dropdown-wrap { position: relative; }
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 220px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: all var(--transition);
+  z-index: 200;
+}
+.user-dropdown-wrap:hover .user-dropdown,
+.user-dropdown-wrap:focus-within .user-dropdown {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+.user-dropdown-header {
+  padding: 0.75rem 0.75rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+.user-dropdown a {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all var(--transition);
+}
+.user-dropdown a:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+/* Cart AJAX helpers */
+</style>
+<script>
+async function updateCartItem(itemId, qty) {
+  const formData = new FormData();
+  formData.append('quantity', qty);
+  formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+  const res = await fetch(`/cart/update/${itemId}/`, { method: 'POST', body: formData });
+  const data = await res.json();
+  if (qty <= 0) {
+    document.getElementById(`cart-item-${itemId}`)?.remove();
+  } else {
+    const qtyEl = document.getElementById(`qty-${itemId}`);
+    if (qtyEl) qtyEl.textContent = qty;
+  }
+  document.querySelectorAll('.cart-count-badge').forEach(el => el.textContent = data.cart_count);
+}
+async function removeCartItem(itemId) {
+  const formData = new FormData();
+  formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+  const res = await fetch(`/cart/remove/${itemId}/`, { method: 'GET' });
+  document.getElementById(`cart-item-${itemId}`)?.remove();
+  location.reload();
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

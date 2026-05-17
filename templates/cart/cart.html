@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Shopping Cart – LuxeMart{% endblock %}
+
+{% block content %}
+<div class="page-hero" style="padding:2rem 0;">
+  <div class="container">
+    <div class="breadcrumb-luxe mb-2">
+      <a href="{% url 'store:home' %}">Home</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>Shopping Cart</span>
+    </div>
+    <h1>Shopping Cart
+      {% if cart.total_items > 0 %}
+      <span style="font-size:1rem;font-weight:400;color:var(--text-muted);font-family:var(--font-body);">({{ cart.total_items }} item{{ cart.total_items|pluralize }})</span>
+      {% endif %}
+    </h1>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container">
+    {% if cart and cart.items.all %}
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start;">
+
+      <!-- Cart Items -->
+      <div>
+        <!-- Header -->
+        <div style="display:grid;grid-template-columns:3fr 1fr 1fr 1fr 40px;gap:1rem;padding:0.75rem 1.5rem;background:var(--bg-secondary);border-radius:var(--radius-lg);margin-bottom:0.75rem;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);">
+          <span>Product</span><span style="text-align:center;">Price</span><span style="text-align:center;">Qty</span><span style="text-align:right;">Total</span><span></span>
+        </div>
+
+        {% for item in cart.items.all %}
+        <div class="cart-item-row" id="cart-row-{{ item.id }}" style="display:grid;grid-template-columns:3fr 1fr 1fr 1fr 40px;gap:1rem;padding:1.25rem 1.5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:0.75rem;align-items:center;transition:all 0.3s;">
+          <!-- Product -->
+          <div style="display:flex;gap:1rem;align-items:center;">
+            <a href="{{ item.product.get_absolute_url }}">
+              {% if item.product.main_image %}
+              <img src="{{ item.product.main_image.url }}" alt="{{ item.product.name }}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--radius-md);flex-shrink:0;">
+              {% else %}
+              <div style="width:80px;height:80px;background:var(--bg-secondary);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;">🛍️</div>
+              {% endif %}
+            </a>
+            <div>
+              <a href="{{ item.product.get_absolute_url }}" style="font-weight:600;font-size:0.9rem;color:var(--text-primary);text-decoration:none;display:block;margin-bottom:0.25rem;">{{ item.product.name }}</a>
+              {% if item.variant %}<div style="font-size:0.78rem;color:var(--text-muted);">{{ item.variant }}</div>{% endif %}
+              <div style="font-size:0.75rem;color:var(--text-muted);">SKU: {{ item.product.sku }}</div>
+              {% if item.product.stock_status == 'low_stock' %}
+              <div style="font-size:0.72rem;color:#f59e0b;margin-top:2px;">⚠ Only {{ item.product.stock_quantity }} left</div>
+              {% endif %}
+            </div>
+          </div>
+          <!-- Unit Price -->
+          <div style="text-align:center;">
+            <div style="font-weight:600;font-size:0.95rem;">${{ item.unit_price }}</div>
+            {% if item.product.discount_price %}
+            <div style="font-size:0.78rem;text-decoration:line-through;color:var(--text-muted);">${{ item.product.price }}</div>
+            {% endif %}
+          </div>
+          <!-- Quantity -->
+          <div style="display:flex;align-items:center;justify-content:center;border:1.5px solid var(--border);border-radius:var(--radius-md);overflow:hidden;width:fit-content;margin:0 auto;">
+            <button type="button" style="width:34px;height:36px;border:none;background:transparent;font-size:1.1rem;cursor:pointer;color:var(--text-secondary);transition:background 0.2s;"
+                    onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'"
+                    onclick="updateQty({{ item.id }}, {{ item.quantity }} - 1, this)">−</button>
+            <span id="qty-{{ item.id }}" style="padding:0 0.5rem;font-weight:600;font-size:0.9rem;min-width:28px;text-align:center;">{{ item.quantity }}</span>
+            <button type="button" style="width:34px;height:36px;border:none;background:transparent;font-size:1.1rem;cursor:pointer;color:var(--text-secondary);transition:background 0.2s;"
+                    onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'"
+                    onclick="updateQty({{ item.id }}, {{ item.quantity }} + 1, this)">+</button>
+          </div>
+          <!-- Total -->
+          <div style="text-align:right;font-weight:700;font-size:1rem;" id="total-{{ item.id }}">${{ item.total_price }}</div>
+          <!-- Remove -->
+          <div style="text-align:center;">
+            <button onclick="removeItem({{ item.id }}, this)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:6px;border-radius:var(--radius-sm);transition:all 0.2s;"
+                    onmouseover="this.style.color='#ef4444';this.style.background='#fef2f2'" onmouseout="this.style.color='var(--text-muted)';this.style.background='transparent'">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+
+        <!-- Cart Actions -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;flex-wrap:wrap;gap:1rem;">
+          <a href="{% url 'store:product_list' %}" class="btn-luxe btn-dark-outline">
+            <i class="bi bi-arrow-left"></i> Continue Shopping
+          </a>
+          <button onclick="location.reload()" class="btn-luxe btn-dark-outline">
+            <i class="bi bi-arrow-repeat"></i> Update Cart
+          </button>
+        </div>
+      </div>
+
+      <!-- Order Summary Sidebar -->
+      <div style="position:sticky;top:calc(var(--navbar-height) + 1rem);">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;">
+          <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg-secondary);">
+            <h5 style="margin:0;font-size:1rem;font-weight:700;">Order Summary</h5>
+          </div>
+          <div style="padding:1.5rem;">
+            <!-- Coupon -->
+            <div style="margin-bottom:1.25rem;">
+              <label style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);display:block;margin-bottom:0.5rem;">Coupon Code</label>
+              <div style="display:flex;gap:0.5rem;">
+                <input type="text" id="couponInput" placeholder="Enter code" class="form-control" style="font-size:0.85rem;" value="{{ cart.coupon_code }}">
+                <button id="applyCouponBtn" class="btn-luxe btn-dark-outline btn-sm" style="white-space:nowrap;">Apply</button>
+              </div>
+              <div id="couponMessage" style="font-size:0.78rem;margin-top:0.4rem;
+                {% if cart.coupon_code %}color:#10b981;{% endif %}">
+                {% if cart.coupon_code %}✓ Coupon "{{ cart.coupon_code }}" applied!{% endif %}
+              </div>
+            </div>
+
+            <div style="border-top:1px solid var(--border);padding-top:1rem;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:0.6rem;font-size:0.875rem;">
+                <span style="color:var(--text-muted);">Subtotal ({{ cart.total_items }} items)</span>
+                <span id="summarySubtotal">${{ cart.subtotal }}</span>
+              </div>
+              {% if cart.coupon_discount > 0 %}
+              <div style="display:flex;justify-content:space-between;margin-bottom:0.6rem;font-size:0.875rem;color:#10b981;">
+                <span>Discount</span>
+                <span>-${{ cart.coupon_discount }}</span>
+              </div>
+              {% endif %}
+              <div style="display:flex;justify-content:space-between;margin-bottom:0.6rem;font-size:0.875rem;">
+                <span style="color:var(--text-muted);">Shipping</span>
+                <span>
+                  {% if cart.subtotal >= 75 %}
+                  <span style="color:#10b981;font-weight:600;">Free 🎉</span>
+                  {% else %}
+                  $9.99 <span style="font-size:0.75rem;color:var(--text-muted);">(Free over $75)</span>
+                  {% endif %}
+                </span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:1.15rem;font-weight:700;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+                <span>Estimated Total</span>
+                <span style="color:var(--gold);" id="summaryTotal">
+                  ${% if cart.subtotal >= 75 %}{{ cart.total|floatformat:2 }}{% else %}{{ cart.total|add:"9.99"|floatformat:2 }}{% endif %}
+                </span>
+              </div>
+              <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">Tax calculated at checkout</p>
+            </div>
+
+            <a href="{% url 'orders:checkout' %}" class="btn-luxe btn-primary w-100" style="margin-top:1.25rem;font-size:0.95rem;padding:1rem;text-align:center;display:block;">
+              <i class="bi bi-lock-fill"></i> Proceed to Checkout
+            </a>
+            <!-- Payment icons -->
+            <div style="display:flex;justify-content:center;gap:0.4rem;margin-top:1rem;flex-wrap:wrap;">
+              <span style="font-size:0.65rem;background:var(--bg-secondary);border:1px solid var(--border);padding:3px 8px;border-radius:4px;color:var(--text-muted);font-weight:700;">VISA</span>
+              <span style="font-size:0.65rem;background:var(--bg-secondary);border:1px solid var(--border);padding:3px 8px;border-radius:4px;color:var(--text-muted);font-weight:700;">MC</span>
+              <span style="font-size:0.65rem;background:var(--bg-secondary);border:1px solid var(--border);padding:3px 8px;border-radius:4px;color:var(--text-muted);font-weight:700;">AMEX</span>
+              <span style="font-size:0.65rem;background:var(--bg-secondary);border:1px solid var(--border);padding:3px 8px;border-radius:4px;color:var(--text-muted);font-weight:700;">PayPal</span>
+              <span style="font-size:0.65rem;background:var(--bg-secondary);border:1px solid var(--border);padding:3px 8px;border-radius:4px;color:var(--text-muted);font-weight:700;">Stripe</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trust Badges -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-top:1rem;">
+          <div style="display:flex;flex-direction:column;gap:0.6rem;">
+            <div style="display:flex;align-items:center;gap:0.6rem;font-size:0.8rem;color:var(--text-secondary);">
+              <i class="bi bi-lock-fill" style="color:var(--gold);"></i> Secure 256-bit SSL encryption
+            </div>
+            <div style="display:flex;align-items:center;gap:0.6rem;font-size:0.8rem;color:var(--text-secondary);">
+              <i class="bi bi-arrow-repeat" style="color:var(--gold);"></i> 30-day no-fuss returns
+            </div>
+            <div style="display:flex;align-items:center;gap:0.6rem;font-size:0.8rem;color:var(--text-secondary);">
+              <i class="bi bi-headset" style="color:var(--gold);"></i> 24/7 customer support
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Empty Cart -->
+    <div style="text-align:center;padding:6rem 2rem;max-width:480px;margin:0 auto;">
+      <div style="font-size:5rem;margin-bottom:1.5rem;">🛒</div>
+      <h2 class="display-font" style="font-size:2.2rem;margin-bottom:0.75rem;">Your cart is empty</h2>
+      <p style="color:var(--text-muted);margin-bottom:2rem;font-size:1rem;">Looks like you haven't added anything yet. Discover our curated collection!</p>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+        <a href="{% url 'store:product_list' %}" class="btn-luxe btn-primary btn-lg">Shop All Products</a>
+        <a href="{% url 'store:product_list' %}?filter=trending" class="btn-luxe btn-dark-outline btn-lg">🔥 Trending Now</a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = '{{ csrf_token }}';
+
+async function updateQty(itemId, newQty, btn) {
+  if (newQty < 1) { removeItem(itemId, btn); return; }
+  const fd = new FormData();
+  fd.append('quantity', newQty);
+  fd.append('csrfmiddlewaretoken', CSRF);
+  const res = await fetch(`/cart/update/${itemId}/`, { method:'POST', body:fd });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById(`qty-${itemId}`).textContent = newQty;
+    if (data.item_total) document.getElementById(`total-${itemId}`).textContent = '$' + parseFloat(data.item_total).toFixed(2);
+    document.querySelectorAll('.cart-count-badge').forEach(el => el.textContent = data.cart_count);
+  }
+}
+
+async function removeItem(itemId, btn) {
+  const row = document.getElementById(`cart-row-${itemId}`);
+  row.style.opacity = '0.4';
+  row.style.transform = 'translateX(-20px)';
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', CSRF);
+  await fetch(`/cart/remove/${itemId}/`, { method:'GET' });
+  setTimeout(() => { row.remove(); location.reload(); }, 300);
+}
+</script>
+{% endblock %}

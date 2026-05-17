@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Login – LuxeMart{% endblock %}
+
+{% block content %}
+<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:3rem 1rem;background:var(--bg-secondary);">
+  <div style="width:100%;max-width:440px;">
+    <!-- Card -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:2.5rem;box-shadow:var(--shadow-lg);">
+      <div style="text-align:center;margin-bottom:2rem;">
+        <a href="{% url 'store:home' %}" class="logo" style="justify-content:center;margin-bottom:1.5rem;display:inline-flex;">
+          <div class="logo-icon"><i class="bi bi-gem"></i></div>
+          Luxe<span>Mart</span>
+        </a>
+        <h1 class="display-font" style="font-size:2rem;margin-bottom:0.5rem;">Welcome Back</h1>
+        <p style="color:var(--text-muted);font-size:0.9rem;">Sign in to your account to continue</p>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <div style="position:relative;">
+            <input type="email" name="username" class="form-control" placeholder="your@email.com"
+                   value="{{ form.username.value|default:'' }}" required
+                   style="padding-left:2.75rem;">
+            <i class="bi bi-envelope" style="position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.9rem;"></i>
+          </div>
+          {% if form.username.errors %}<p style="color:#ef4444;font-size:0.8rem;margin-top:0.4rem;">{{ form.username.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="display:flex;justify-content:space-between;">
+            Password
+            <a href="{% url 'users:password_reset' %}" style="font-size:0.78rem;color:var(--gold);">Forgot password?</a>
+          </label>
+          <div style="position:relative;">
+            <input type="password" name="password" id="passwordInput" class="form-control" placeholder="••••••••" required style="padding-left:2.75rem;padding-right:2.75rem;">
+            <i class="bi bi-lock" style="position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.9rem;"></i>
+            <button type="button" onclick="togglePassword()" style="position:absolute;right:0.875rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;">
+              <i class="bi bi-eye" id="eyeIcon"></i>
+            </button>
+          </div>
+          {% if form.non_field_errors %}<p style="color:#ef4444;font-size:0.8rem;margin-top:0.4rem;">{{ form.non_field_errors.0 }}</p>{% endif %}
+        </div>
+        <button type="submit" class="btn-luxe btn-primary w-100" style="margin-top:0.5rem;font-size:0.95rem;padding:1rem;">
+          Sign In <i class="bi bi-arrow-right"></i>
+        </button>
+      </form>
+
+      <div style="text-align:center;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+        <p style="font-size:0.875rem;color:var(--text-muted);">
+          Don't have an account?
+          <a href="{% url 'users:register' %}" style="color:var(--gold);font-weight:600;">Create one free</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function togglePassword() {
+  const input = document.getElementById('passwordInput');
+  const icon = document.getElementById('eyeIcon');
+  if(input.type === 'password') { input.type = 'text'; icon.className = 'bi bi-eye-slash'; }
+  else { input.type = 'password'; icon.className = 'bi bi-eye'; }
+}
+</script>
+{% endblock %}
